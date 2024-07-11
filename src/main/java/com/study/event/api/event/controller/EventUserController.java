@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/auth")
 @Slf4j
 @RequiredArgsConstructor
+//@CrossOrigin(origins = "http//localhost:3000") //클라이언트를 확인(3000에서 온 것들만)
 public class EventUserController {
 
     private final EventUserService eventUserService;
