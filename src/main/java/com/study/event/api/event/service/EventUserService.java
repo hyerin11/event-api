@@ -1,5 +1,6 @@
 package com.study.event.api.event.service;
 
+import com.study.event.api.event.dto.request.EventUserSaveDto;
 import com.study.event.api.event.entity.EmailVerification;
 import com.study.event.api.event.entity.EventUser;
 import com.study.event.api.event.repository.EmailVerificationRepository;
@@ -9,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,10 @@ public class EventUserService {
 
     // 이메일 전송 객체
     private final JavaMailSender mailSender;
+
+    // 패스워드 암호화 객체
+    private final PasswordEncoder encoder;
+
 
     // 이메일 중복확인 처리
     public boolean checkEmailDuplicate(String email) {
@@ -131,23 +137,41 @@ public class EventUserService {
             ) {
                 // 이메일 인증여부 true로 수정
                 eventUser.setEmailVerified(true);
-                eventUserRepository.save(eventUser); //UPDATE
-                //인증코드 DB에서 삭제
+                eventUserRepository.save(eventUser); // UPDATE
+
+                // 인증코드 데이터베이스에서 삭제
                 emailVerificationRepository.delete(ev);
                 return true;
-            } else{ //인증코드가 틀렸거나 만료된 경우
-                //1. 인증코드 재발송
-                //2. 원래 인증 코드 삭제
+            } else {  // 인증코드가 틀렸거나 만료된 경우
+                // 인증코드 재발송
+                // 원래 인증 코드 삭제
                 emailVerificationRepository.delete(ev);
 
-                //3. 새 인증코드 발급 후 이메일 재전송
-                //4. DB에 새 인증코드 저장
+                // 새인증코드 발급 이메일 재전송
+                // 데이터베이스에 새 인증코드 저장
                 generateAndSendCode(email, eventUser);
                 return false;
-
             }
 
         }
         return false;
+    }
+
+    // 회원가입 마무리
+    public void confirmSignUp(EventUserSaveDto dto) {
+
+        // 기존 회원 정보 조회
+        EventUser foundUser = eventUserRepository
+                .findByEmail(dto.getEmail())
+                .orElseThrow(
+                        () -> new RuntimeException("회원 정보가 존재하지 않습니다.")
+                );
+
+        // 데이터 반영 (패스워드, 가입시간)
+        String password = dto.getPassword();
+        String encodedPassword = encoder.encode(password); // 암호화
+
+        foundUser.confirm(encodedPassword);
+        eventUserRepository.save(foundUser);
     }
 }
