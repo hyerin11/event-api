@@ -7,8 +7,10 @@ package com.study.event.api.config;
 //OAuth2 - SNS로그인
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -31,9 +33,22 @@ public class SecurityConfig {
                 .csrf().disable() //필터설정 off
                 .httpBasic().disable() //베이직 인증 off
                 .formLogin().disable() //로그인창 off
-                .authorizeRequests()//요청 별 인가 설정
-                .antMatchers("/**").permitAll() //인가 설정 off
-                ;
+
+                // 세션 인증은 더 이상 사용하지 않음
+                .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .authorizeRequests() // 요청 별로 인가 설정
+
+                // 아래의 URL요청은 로그인 없이 모두 허용
+                .antMatchers("/", "/auth/**").permitAll()
+//                .antMatchers(HttpMethod.POST,"/events/**").permitAll()
+
+                // 나머지 요청은 전부 인증(로그인) 후 진행해라
+                .anyRequest().authenticated() // 인가 설정 on
+                //인증받아라~ 403오류
+        ;
+
 
         return http.build();
     }
