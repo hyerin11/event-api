@@ -56,17 +56,17 @@ public class EventUserController {
 
 
     @PostMapping("/sign-in")
-    public ResponseEntity<?> signIn(@RequestBody LoginRequestDto dto, LoginResponseDto responseDto) {
+    public ResponseEntity<?> signIn (@RequestBody LoginRequestDto dto) {
 
         try {
             eventUserService.authenticate(dto);
-            return ResponseEntity.ok().body(responseDto);
+            return ResponseEntity.ok().body(eventUserService.authenticate(dto));
         } catch (LoginFailException e) {
-            // 서비스에서 예외발생 (로그인 실패)
-            String errorMessage = e.getMessage();
-            return ResponseEntity.status(422).body(errorMessage);
+            // 서브시에서 예외발생 (로그인 실패)
+            // ⭐ LoginFailException 별도로 로그인 실패시 예외처리 메세지 주는게 좋음
+            String errormessage = e.getMessage();
+            return ResponseEntity.status(422).body(errormessage);
         }
-
     }
 
 
