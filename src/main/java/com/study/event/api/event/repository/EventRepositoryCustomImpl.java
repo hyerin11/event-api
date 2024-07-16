@@ -37,6 +37,7 @@ public class EventRepositoryCustomImpl implements EventRepositoryCustom {
         // 총 데이터 수 조회
         Long count = factory
                 .select(event.count())
+                .where(event.eventUser.id.eq(userId))
                 .from(event)
                 .fetchOne();
 
