@@ -1,5 +1,6 @@
 package com.study.event.api.event.controller;
 
+import com.study.event.api.auth.TokenProvider;
 import com.study.event.api.event.dto.request.EventUserSaveDto;
 import com.study.event.api.event.dto.request.LoginRequestDto;
 import com.study.event.api.event.dto.response.LoginResponseDto;
@@ -8,10 +9,14 @@ import com.study.event.api.exception.LoginFailException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.sql.SQLException;
+import java.util.NoSuchElementException;
+
+import static com.study.event.api.auth.TokenProvider.*;
+
 
 @RestController
 @RequestMapping("/auth")
@@ -56,17 +61,35 @@ public class EventUserController {
 
 
     @PostMapping("/sign-in")
-    public ResponseEntity<?> signIn (@RequestBody LoginRequestDto dto) {
+    public ResponseEntity<?> signIn(@RequestBody LoginRequestDto dto) {
 
         try {
-            eventUserService.authenticate(dto);
-            return ResponseEntity.ok().body(eventUserService.authenticate(dto));
+            LoginResponseDto responseDto = eventUserService.authenticate(dto);
+            return ResponseEntity.ok().body(responseDto);
         } catch (LoginFailException e) {
-            // 서브시에서 예외발생 (로그인 실패)
-            // ⭐ LoginFailException 별도로 로그인 실패시 예외처리 메세지 주는게 좋음
-            String errormessage = e.getMessage();
-            return ResponseEntity.status(422).body(errormessage);
+            // 서비스에서 예외발생 (로그인 실패)
+            String errorMessage = e.getMessage();
+            return ResponseEntity.status(422).body(errorMessage);
         }
+
+    }
+
+    // Premium회원으로 등급업하는 요청처리
+    @PutMapping("/promote")
+    public ResponseEntity<?> promote(
+            @AuthenticationPrincipal TokenUserInfo userInfo
+    ) {
+
+        try {
+            LoginResponseDto dto = eventUserService.promoteToPremium(userInfo.getUserId());
+            return ResponseEntity.ok().body(dto);
+        } catch (NoSuchElementException e) {
+            log.warn(e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+//        catch (SQLException e) {
+//            return ResponseEntity.internalServerError().body();
+//        }
     }
 
 
